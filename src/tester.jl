@@ -27,12 +27,42 @@ function get_set_dependencies(S_str::Set)
     end
     return S
 end
-
 function string_to_charset(St::String)
     substrings = split(St, "")
     strings = [String(l) for l in substrings]
     return Set(strings)
 end
+## Testing BCNF
+attributes = Set(["part", "manufacturer", "seller", "price"])
+FDs = Set([
+    Set(["part"]) => Set(["manufacturer"]),
+    Set(["part", "seller"]) => Set(["price"])
+])
+
+attr_subsets = BCNF_decomp(attributes, FDs, verbose=false)
+@info attr_subsets
+
+for attr in attr_subsets
+    println("Projection onto ", attr, " is ", project(FDs, attr))
+end
+
+## Testing 3NF
+b = NF3_synthesis(FDs, attributes)
+println("3NF Synthesis result: ", b)
+
+## Testing finding superkey
+h =find_superkey(FDs, attributes, Set(); verbose=false)
+
+
+
+
+
+
+
+
+
+
+
 
 ## Testing projection
 FD_str = Set([

@@ -1,5 +1,5 @@
 ## Attribute closure algorithm
-function attribute_closure(Y::Set{String}, S::Set; verbose::Bool=false)
+function attribute_closure(Y::Set, S::Set; verbose::Bool=false)
     """Given a set of attributes `Y` and some set of functional dependencies
     `S`, returns the closure of attributes `Y`.
     """
@@ -260,4 +260,46 @@ function BCNF_decomp(attributes::Set, FDs::Set; verbose::Bool=false)
         end
     end
     return [attributes]
+end
+
+## 3NF synthesis
+function NF3_synthesis(FD, attributes)
+    """Returns a list of subsets of `attributes` representing
+    a schema in 3NF.
+    """
+    M = minimal_basis(FD)
+    relations = [union(pair[1],pair[2]) for pair in M]
+
+    # Check if any relation is a superkey for `attributes`
+    need_superkey = true
+    for rel in relations
+        if attributes == attribute_closure(rel, FD)
+            return relations
+        end
+    end
+
+    # If we didn't return above, we need to add a superkey.
+    superkey = find_superkey(FD, attributes, Set())
+    relations = [relations; [superkey] ]
+    return relations
+end
+
+## Finding smallest superkey
+function find_superkey(FD::Set, attributes::Set, current_key::Set; verbose::Bool=false)
+    if attribute_closure(current_key, FD) == attributes
+        return current_key
+    end
+
+    alternate_keys = []
+    for new_str in setdiff(attributes, current_key)
+        potential_new_key = union(current_key, Set([new_str]))
+        alternate_keys = [alternate_keys; [find_superkey(FD, attributes, potential_new_key)]]
+    end
+
+    lens = [length(k) for k in alternate_keys]
+    if verbose
+        println("Alternate keys: ", alternate_keys)
+        println("Lengths: ", lens)
+    end
+    return alternate_keys[argmin(lens)]
 end
